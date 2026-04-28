@@ -3,6 +3,7 @@ import { Alert } from 'react-native'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { useAuthStore } from '../stores/authStore'
 import { authService } from '../services/authService'
+import { companyService } from '../services/companyService'
 import { pushTokenService } from '../services/pushTokenService'
 
 export const useAuth = () => {
@@ -14,10 +15,25 @@ export const useAuth = () => {
       setIsLoading(true)
       try {
         const response = await authService.login({ email, password })
-        const accessToken = response.session.access_token
 
-        await AsyncStorage.setItem('auth-token', accessToken)
-        setAuth(accessToken, response.user)
+        await AsyncStorage.setItem('auth-token', response.accessToken)
+
+        // Fetch company info to get slug and name
+        let companySlug: string | undefined
+        let companyName: string | undefined
+        try {
+          const company = await companyService.getCompany()
+          companySlug = company.slug
+          companyName = company.name
+        } catch {
+          // Continue without company info
+        }
+
+        setAuth(response.accessToken, {
+          ...response.user,
+          companySlug,
+          companyName,
+        })
 
         return true
       } catch (error: unknown) {

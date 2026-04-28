@@ -12,8 +12,8 @@ export interface AuthUser {
   email: string
   name: string
   companyId: string
-  companyName: string
-  companySlug: string
+  companyName?: string
+  companySlug?: string
 }
 
 export interface LoginPayload {
@@ -22,10 +22,7 @@ export interface LoginPayload {
 }
 
 export interface LoginResponse {
-  session: {
-    access_token: string
-    refresh_token: string
-  }
+  accessToken: string
   user: AuthUser
 }
 

@@ -1,13 +1,13 @@
 import { api } from './api'
-import type { ApiResponse, LoginPayload, LoginResponse } from '../types'
+import type { LoginPayload, LoginResponse } from '../types'
 
 export const authService = {
   login: async (payload: LoginPayload): Promise<LoginResponse> => {
-    const response = await api.post<ApiResponse<LoginResponse>>(
+    const response = await api.post<LoginResponse>(
       '/auth/login',
       payload,
     )
-    return response.data.data
+    return response.data
   },
 
   logout: async (): Promise<void> => {
