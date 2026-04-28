@@ -72,6 +72,42 @@ export const TableDetailScreen = () => {
       </View>
 
       <ScrollView style={styles.content}>
+        {/* Action buttons */}
+        <View style={styles.actionRow}>
+          <TouchableOpacity
+            style={styles.actionButtonPrimary}
+            onPress={() =>
+              navigation.navigate('NewOrder', {
+                tableId: table.id,
+                tableNumber: table.number,
+              })
+            }
+            activeOpacity={0.8}
+          >
+            <Ionicons name="add-circle-outline" size={20} color={colors.white} />
+            <Text style={styles.actionButtonPrimaryText}>Novo Pedido</Text>
+          </TouchableOpacity>
+          {isOccupied && (
+            <TouchableOpacity
+              style={styles.actionButtonOutline}
+              onPress={() =>
+                navigation.navigate('TransferTable', {
+                  sourceTableId: table.id,
+                  sourceTableNumber: table.number,
+                })
+              }
+              activeOpacity={0.8}
+            >
+              <Ionicons
+                name="swap-horizontal-outline"
+                size={20}
+                color={colors.textPrimary}
+              />
+              <Text style={styles.actionButtonOutlineText}>Transferir Mesa</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+
         {/* Resumo financeiro */}
         {isOccupied && (
           <View style={styles.summaryCard}>
@@ -228,6 +264,43 @@ const styles = StyleSheet.create({
   infoValue: {
     ...typography.body,
     fontWeight: '600',
+    color: colors.textPrimary,
+  },
+  actionRow: {
+    flexDirection: 'row',
+    gap: spacing.md,
+    marginBottom: spacing.md,
+  },
+  actionButtonPrimary: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    backgroundColor: colors.primary,
+    borderRadius: borderRadius.lg,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.xl,
+  },
+  actionButtonPrimaryText: {
+    ...typography.button,
+    color: colors.white,
+  },
+  actionButtonOutline: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: borderRadius.lg,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.xl,
+  },
+  actionButtonOutlineText: {
+    ...typography.button,
     color: colors.textPrimary,
   },
 })

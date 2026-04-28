@@ -13,6 +13,9 @@ import {
   CallsScreen,
   SettingsScreen,
   TableDetailScreen,
+  NewOrderScreen,
+  OrderCartScreen,
+  TransferTableModal,
 } from './src/screens'
 import { usePushNotifications } from './src/hooks/usePushNotifications'
 import { useSocket } from './src/hooks/useSocket'
@@ -33,6 +36,18 @@ const queryClient = new QueryClient({
 export type MainStackParamList = {
   TablesHome: undefined
   TableDetail: { tableId: string }
+  NewOrder: { tableId: string; tableNumber: string }
+  OrderCart: {
+    tableId: string
+    tableNumber: string
+    items: {
+      productId: string
+      name: string
+      price: number
+      quantity: number
+    }[]
+  }
+  TransferTable: { sourceTableId: string; sourceTableNumber: string }
 }
 
 type AuthStackParamList = {
@@ -47,6 +62,13 @@ const TablesStack = () => (
   <MainStack.Navigator screenOptions={{ headerShown: false }}>
     <MainStack.Screen name="TablesHome" component={TablesScreen} />
     <MainStack.Screen name="TableDetail" component={TableDetailScreen} />
+    <MainStack.Screen name="NewOrder" component={NewOrderScreen} />
+    <MainStack.Screen name="OrderCart" component={OrderCartScreen} />
+    <MainStack.Screen
+      name="TransferTable"
+      component={TransferTableModal}
+      options={{ presentation: 'modal' }}
+    />
   </MainStack.Navigator>
 )
 
