@@ -2,7 +2,7 @@ import React from 'react'
 import {
   View,
   Text,
-  FlatList,
+  ScrollView,
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
@@ -14,87 +14,8 @@ import { Ionicons } from '@expo/vector-icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { waiterCallService } from '../services/waiterCallService'
 import { formatTime, getRelativeTime } from '../utils/date.utils'
-import { colors, spacing, borderRadius, typography } from '../theme'
+import { colors } from '../theme'
 import type { WaiterCall } from '../types'
-
-const CallCard = ({
-  call,
-  onAcknowledge,
-  onComplete,
-}: {
-  call: WaiterCall
-  onAcknowledge: () => void
-  onComplete: () => void
-}) => {
-  const isPending = call.status === 'pending'
-  const isAcknowledged = call.status === 'acknowledged'
-  const isBill = call.type === 'bill'
-
-  return (
-    <View
-      style={[styles.card, isAcknowledged && styles.cardAcknowledged]}
-    >
-      <View style={styles.cardLeft}>
-        <View style={styles.cardHeader}>
-          <Ionicons
-            name="restaurant"
-            size={24}
-            color={isPending ? colors.primary : colors.textMuted}
-          />
-          <Text
-            style={[
-              styles.tableText,
-              !isPending && styles.textMuted,
-            ]}
-          >
-            Mesa {call.tableNumber}
-          </Text>
-          <View
-            style={[
-              styles.typeBadge,
-              { backgroundColor: isBill ? colors.warning : colors.primary },
-            ]}
-          >
-            <Text style={styles.typeBadgeText}>
-              {isBill ? 'Conta' : 'Chamado'}
-            </Text>
-          </View>
-        </View>
-
-        <Text style={styles.timeText}>
-          {formatTime(call.createdAt)} - {getRelativeTime(call.createdAt)}
-        </Text>
-      </View>
-
-      <View style={styles.cardActions}>
-        {isPending && (
-          <TouchableOpacity
-            style={styles.acknowledgeButton}
-            onPress={onAcknowledge}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.acknowledgeButtonText}>Atender</Text>
-          </TouchableOpacity>
-        )}
-
-        {isAcknowledged && (
-          <TouchableOpacity
-            style={styles.completeButton}
-            onPress={onComplete}
-            activeOpacity={0.8}
-          >
-            <Ionicons
-              name="checkmark-done"
-              size={20}
-              color={colors.textMuted}
-            />
-            <Text style={styles.completeButtonText}>Concluir</Text>
-          </TouchableOpacity>
-        )}
-      </View>
-    </View>
-  )
-}
 
 export const CallsScreen = () => {
   const queryClient = useQueryClient()
@@ -108,7 +29,7 @@ export const CallsScreen = () => {
     queryKey: ['waiter-calls'],
     queryFn: () => waiterCallService.getCalls(),
     staleTime: 1000 * 10,
-    refetchInterval: 1000 * 30,
+    refetchInterval: 1000 * 15,
   })
 
   const acknowledgeMutation = useMutation({
@@ -131,179 +52,118 @@ export const CallsScreen = () => {
     },
   })
 
-  const pendingCalls = (calls ?? []).filter((c) => c.status === 'pending')
-  const acknowledgedCalls = (calls ?? []).filter(
-    (c) => c.status === 'acknowledged',
-  )
+  const allCalls = calls ?? []
+  const pendingCalls = allCalls.filter((c: WaiterCall) => c.status === 'pending')
+  const acknowledgedCalls = allCalls.filter((c: WaiterCall) => c.status === 'acknowledged')
   const sortedCalls = [...pendingCalls, ...acknowledgedCalls]
+
+  if (__DEV__) console.log(`[CallsScreen] total=${allCalls.length} pending=${pendingCalls.length} ack=${acknowledgedCalls.length} sorted=${sortedCalls.length}`)
 
   if (isLoading) {
     return (
-      <View style={styles.loadingContainer}>
+      <View style={s.center}>
         <ActivityIndicator size="large" color={colors.primary} />
       </View>
     )
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Chamados</Text>
-        <Text style={styles.headerSubtitle}>
-          {pendingCalls.length} pendente
-          {pendingCalls.length !== 1 ? 's' : ''}
+    <SafeAreaView style={s.safe} edges={['top']}>
+      <View style={s.header}>
+        <Text style={s.headerTitle}>Chamados</Text>
+        <Text style={s.headerSub}>
+          {pendingCalls.length} pendente{pendingCalls.length !== 1 ? 's' : ''}
         </Text>
       </View>
 
-      <FlatList
-        data={sortedCalls}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.listContent}
+      <ScrollView
+        style={s.scroll}
+        contentContainerStyle={s.scrollContent}
         refreshControl={
-          <RefreshControl
-            refreshing={isRefetching}
-            onRefresh={refetch}
-            colors={[colors.primary]}
-          />
+          <RefreshControl refreshing={isRefetching} onRefresh={refetch} colors={[colors.primary]} />
         }
-        renderItem={({ item }) => (
+      >
+        {sortedCalls.length === 0 && (
+          <View style={s.empty}>
+            <Ionicons name="notifications-off-outline" size={64} color="#999" />
+            <Text style={s.emptyTitle}>Nenhum chamado</Text>
+            <Text style={s.emptySub}>Chamados aparecerao aqui quando clientes chamarem</Text>
+          </View>
+        )}
+
+        {sortedCalls.map((item: WaiterCall) => (
           <CallCard
-            call={item}
+            key={item.id}
+            item={item}
             onAcknowledge={() => acknowledgeMutation.mutate(item.id)}
             onComplete={() => completeMutation.mutate(item.id)}
           />
-        )}
-        ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Ionicons
-              name="notifications-off-outline"
-              size={64}
-              color={colors.textMuted}
-            />
-            <Text style={styles.emptyTitle}>Nenhum chamado</Text>
-            <Text style={styles.emptySubtitle}>
-              Chamados aparecerao aqui quando clientes chamarem
-            </Text>
-          </View>
-        }
-      />
+        ))}
+      </ScrollView>
     </SafeAreaView>
   )
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  loadingContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.background,
-  },
-  header: {
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    backgroundColor: colors.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  headerTitle: {
-    ...typography.h2,
-    color: colors.textPrimary,
-  },
-  headerSubtitle: {
-    ...typography.bodySmall,
-    color: colors.textSecondary,
-    marginTop: spacing.xs,
-  },
-  listContent: {
-    padding: spacing.lg,
-  },
-  card: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.lg,
-    marginBottom: spacing.md,
-  },
-  cardAcknowledged: {
-    backgroundColor: '#FAFAFA',
-  },
-  cardLeft: {
-    flex: 1,
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    marginBottom: spacing.xs,
-  },
-  tableText: {
-    ...typography.h3,
-    color: colors.textPrimary,
-  },
-  textMuted: {
-    color: colors.textMuted,
-  },
-  typeBadge: {
-    borderRadius: borderRadius.full,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 2,
-  },
-  typeBadgeText: {
-    ...typography.caption,
-    fontWeight: '600',
-    color: colors.white,
-  },
-  timeText: {
-    ...typography.bodySmall,
-    color: colors.textSecondary,
-  },
-  cardActions: {
-    marginLeft: spacing.md,
-  },
-  acknowledgeButton: {
-    backgroundColor: colors.primary,
-    borderRadius: borderRadius.lg,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.xl,
-  },
-  acknowledgeButtonText: {
-    ...typography.button,
-    color: colors.white,
-  },
-  completeButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-  },
-  completeButtonText: {
-    ...typography.bodySmall,
-    color: colors.textMuted,
-  },
-  emptyContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingTop: 100,
-  },
-  emptyTitle: {
-    ...typography.h3,
-    color: colors.textPrimary,
-    marginTop: spacing.lg,
-  },
-  emptySubtitle: {
-    ...typography.bodySmall,
-    color: colors.textSecondary,
-    marginTop: spacing.sm,
-    textAlign: 'center',
-  },
+const CallCard = ({
+  item,
+  onAcknowledge,
+  onComplete,
+}: {
+  item: WaiterCall
+  onAcknowledge: () => void
+  onComplete: () => void
+}) => {
+  const isPending = item.status === 'pending'
+  const isBill = item.type === 'bill'
+
+  return (
+    <View style={[s.card, !isPending && s.cardMuted]}>
+      <View style={s.cardRow}>
+        <Ionicons name="restaurant" size={22} color={isPending ? colors.primary : '#999'} />
+        <Text style={[s.cardTable, !isPending && { color: '#999' }]}>Mesa {item.tableNumber}</Text>
+        <View style={[s.badge, { backgroundColor: isBill ? '#F59E0B' : colors.primary }]}>
+          <Text style={s.badgeText}>{isBill ? 'Conta' : 'Chamado'}</Text>
+        </View>
+      </View>
+
+      <Text style={s.cardTime}>
+        {formatTime(item.createdAt)} - {getRelativeTime(item.createdAt)}
+      </Text>
+
+      {isPending ? (
+        <TouchableOpacity style={s.btnPrimary} onPress={onAcknowledge} activeOpacity={0.8}>
+          <Text style={s.btnPrimaryText}>Atender</Text>
+        </TouchableOpacity>
+      ) : (
+        <TouchableOpacity style={s.btnGhost} onPress={onComplete} activeOpacity={0.8}>
+          <Ionicons name="checkmark-done" size={18} color="#999" />
+          <Text style={s.btnGhostText}>Concluir</Text>
+        </TouchableOpacity>
+      )}
+    </View>
+  )
+}
+
+const s = StyleSheet.create({
+  safe: { flex: 1, backgroundColor: '#F5F5F5' },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#F5F5F5' },
+  header: { backgroundColor: '#FFFFFF', borderBottomWidth: 1, borderBottomColor: '#E0E0E0', paddingHorizontal: 24, paddingVertical: 16 },
+  headerTitle: { fontSize: 24, fontWeight: '700', color: '#1A1A1A' },
+  headerSub: { fontSize: 14, color: '#666', marginTop: 4 },
+  scroll: { flex: 1 },
+  scrollContent: { padding: 16 },
+  empty: { alignItems: 'center', paddingTop: 100 },
+  emptyTitle: { fontSize: 20, fontWeight: '600', color: '#1A1A1A', marginTop: 24 },
+  emptySub: { fontSize: 14, color: '#666', marginTop: 8, textAlign: 'center' },
+  card: { backgroundColor: '#FFFFFF', borderRadius: 12, borderWidth: 1, borderColor: '#E0E0E0', padding: 16, marginBottom: 12 },
+  cardMuted: { backgroundColor: '#FAFAFA' },
+  cardRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },
+  cardTable: { fontSize: 18, fontWeight: '700', color: '#1A1A1A', marginLeft: 8, marginRight: 8 },
+  badge: { borderRadius: 100, paddingHorizontal: 8, paddingVertical: 2 },
+  badgeText: { fontSize: 12, fontWeight: '600', color: '#FFFFFF' },
+  cardTime: { fontSize: 14, color: '#666', marginBottom: 10 },
+  btnPrimary: { backgroundColor: colors.primary, borderRadius: 12, paddingVertical: 12, paddingHorizontal: 24, alignSelf: 'flex-start' },
+  btnPrimaryText: { fontSize: 16, fontWeight: '600', color: '#FFFFFF' },
+  btnGhost: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', paddingVertical: 4 },
+  btnGhostText: { fontSize: 14, color: '#999', marginLeft: 4 },
 })

@@ -40,11 +40,11 @@
         }
       ]
     ],
+    "owner": "devjuliof2",
     "extra": {
       "eas": {
-        "projectId": ""
+        "projectId": "c1226da6-4bd1-47cb-92b3-17e009b623c5"
       }
-    },
-    "owner": "devjuliof2"
+    }
   }
 }

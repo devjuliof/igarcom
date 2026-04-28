@@ -4,9 +4,11 @@ import type { WaiterCall, WaiterCallStatus } from '../types'
 export const waiterCallService = {
   getCalls: async (status?: WaiterCallStatus): Promise<WaiterCall[]> => {
     const params = status ? { status } : {}
+    if (__DEV__) console.log('[WaiterCalls] Fetching calls...')
     const response = await api.get<{ data: WaiterCall[] }>('/waiter-calls', {
       params,
     })
+    if (__DEV__) console.log('[WaiterCalls] Response:', JSON.stringify(response.data).substring(0, 200))
     return response.data.data
   },
 

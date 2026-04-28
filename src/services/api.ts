@@ -31,6 +31,7 @@ api.interceptors.request.use(
   async (config) => {
     try {
       const token = await AsyncStorage.getItem('auth-token')
+      if (__DEV__) console.log(`[API] ${config.method?.toUpperCase()} ${config.url} | token: ${token ? 'yes' : 'NO'}`)
       if (token) {
         config.headers.Authorization = `Bearer ${token}`
       }
